@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TextVault</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a40;--accent:#6c63ff;--accent2:#ff6b6b;--accent3:#43e97b;--text:#e8e8f0;--muted:#7070a0;--ru:#ff6b6b;--en:#6c63ff;--uz:#43e97b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(108,99,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* AUTH */
+#auth-screen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:380px;position:relative;overflow:hidden}
+.auth-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3))}
+.auth-logo{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.auth-sub{font-size:11px;color:var(--muted);margin-bottom:32px}
+.auth-label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block}
+.auth-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;margin-bottom:16px;transition:border-color .2s}
+.auth-input:focus{border-color:var(--accent)}
+.auth-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--accent),#9c6fff);border:none;border-radius:10px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.auth-btn:hover{opacity:.9}
+.auth-err{color:var(--ru);font-size:11px;margin-top:8px;min-height:16px}
+
+/* SETUP */
+#setup-screen{position:fixed;inset:0;z-index:999;display:none;align-items:center;justify-content:center;background:var(--bg);overflow-y:auto;padding:20px}
+.setup-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:100%;max-width:560px;position:relative}
+.setup-box::before{content:'';display:block;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;margin-bottom:24px;margin-top:-40px;margin-left:-40px;margin-right:-40px}
+.setup-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:8px;padding-top:16px}
+.setup-desc{font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:20px}
+.s-step{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;font-size:11px;line-height:1.8;color:var(--muted)}
+.s-step strong{color:var(--text)}.s-step a{color:var(--accent);text-decoration:none}.s-step code{background:rgba(108,99,255,.15);color:var(--accent);padding:1px 6px;border-radius:4px}
+.s-divider{border:none;border-top:1px solid var(--border);margin:18px 0}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:62px}
+.logo{font-family:'Playfair Display',serif;font-size:21px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-right{display:flex;align-items:center;gap:16px}
+.hdr-s{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+.hdr-s strong{color:var(--text)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.ub{display:flex;align-items:center;gap:7px;padding:6px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:11px;cursor:pointer;transition:border-color .2s}
+.ub:hover{border-color:var(--accent)}
+.sync-b{padding:6px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;font-family:'JetBrains Mono',monospace}
+.sync-b:hover{color:var(--text);border-color:var(--accent3)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:272px 1fr;min-height:calc(100vh - 62px);position:relative;z-index:1}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:18px 0;display:flex;flex-direction:column;position:sticky;top:62px;height:calc(100vh - 62px);overflow-y:auto}
+.sbs{padding:0 15px 15px;border-bottom:1px solid var(--border);margin-bottom:3px}
+.sbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;padding-top:13px}
+.sw{position:relative}
+.sw input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 11px 9px 32px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;transition:border-color .2s}
+.sw input:focus{border-color:var(--accent)}
+.sw input::placeholder{color:var(--muted)}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+.lf{display:flex;flex-direction:column;gap:4px}
+.lb{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11px;transition:all .15s;text-align:left;width:100%}
+.lb:hover{background:var(--surface2);color:var(--text)}.lb.active{background:var(--surface2);border-color:var(--border);color:var(--text)}
+.bdg{margin-left:auto;background:var(--bg);padding:2px 7px;border-radius:99px;font-size:10px}
+.tl{display:flex;flex-direction:column;gap:3px}
+.ti{display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:11px;color:var(--muted);transition:all .15s}
+.ti:hover{background:var(--surface2);color:var(--text)}.ti.active{background:var(--surface2);color:var(--text)}
+.tc{margin-left:auto;font-size:10px;color:var(--muted)}
+.bn{margin:0 15px 3px;padding:10px;background:linear-gradient(135deg,var(--accent),#9c6fff);border:none;border-radius:10px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:opacity .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.bn:hover{opacity:.9;transform:translateY(-1px)}
+
+/* MAIN */
+.main{padding:26px;display:flex;flex-direction:column;gap:18px}
+.mb{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:17px;position:relative;overflow:hidden}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.mc-t::before{background:var(--accent)}.mc-r::before{background:var(--ru)}.mc-e::before{background:var(--en)}.mc-u::before{background:var(--uz)}
+.ml{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.mv{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;line-height:1;margin-bottom:4px}
+.mc-t .mv{color:var(--accent)}.mc-r .mv{color:var(--ru)}.mc-e .mv{color:var(--en)}.mc-u .mv{color:var(--uz)}
+.ms{font-size:10px;color:var(--muted)}
+.cr{display:flex;align-items:center;justify-content:space-between;gap:11px}
+.vt{font-family:'Playfair Display',serif;font-size:17px;font-weight:700}
+.ss{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 11px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;cursor:pointer}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(305px,1fr));gap:13px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:17px;cursor:pointer;transition:all .2s;position:relative}
+.card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(108,99,255,.1)}
+.lt{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:600;margin-bottom:10px}
+.lt-r{background:rgba(255,107,107,.12);color:var(--ru);border:1px solid rgba(255,107,107,.25)}
+.lt-e{background:rgba(108,99,255,.12);color:var(--en);border:1px solid rgba(108,99,255,.25)}
+.lt-u{background:rgba(67,233,123,.12);color:var(--uz);border:1px solid rgba(67,233,123,.25)}
+.ct{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;margin-bottom:7px;line-height:1.3}
+.cp{font-size:11px;color:var(--muted);line-height:1.7;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:13px}
+.cf{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.tt{font-size:10px;padding:2px 7px;background:var(--surface2);border-radius:99px;color:var(--muted);border:1px solid var(--border)}
+.ca{font-size:10px;color:var(--muted)}.cd{font-size:10px;color:var(--muted);margin-left:auto}
+.cpb{position:absolute;top:13px;right:13px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;padding:4px 8px;cursor:pointer;transition:all .15s;opacity:0}
+.card:hover .cpb{opacity:1}
+.cpb:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.es{grid-column:1/-1;text-align:center;padding:56px 28px;color:var(--muted)}
+.es .ei{font-size:40px;margin-bottom:12px}
+mark.hl{background:rgba(108,99,255,.3);border-radius:2px;padding:0 2px;color:inherit}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center}
+.mo.open{display:flex}
+.mb2{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:90%;max-width:640px;max-height:90vh;overflow-y:auto;padding:30px;position:relative;animation:mIn .2s ease}
+.mb2-lg{max-width:800px}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.mt{font-family:'Playfair Display',serif;font-size:21px;font-weight:700;margin-bottom:20px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.cx{position:absolute;top:13px;right:13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:17px;width:33px;height:33px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cx:hover{color:var(--text);background:var(--border)}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px}
+.fl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.fi,.fsl,.fta{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;transition:border-color .2s;width:100%}
+.fi:focus,.fsl:focus,.fta:focus{border-color:var(--accent)}
+.fta{min-height:185px;resize:vertical;line-height:1.7}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px}
+.ls{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.lo{padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;text-align:center;transition:all .15s}
+.lo:hover{border-color:var(--accent);color:var(--text)}
+.lo.sr{border-color:var(--ru);color:var(--ru);background:rgba(255,107,107,.1)}
+.lo.se{border-color:var(--en);color:var(--en);background:rgba(108,99,255,.1)}
+.lo.su{border-color:var(--uz);color:var(--uz);background:rgba(67,233,123,.1)}
+.ma{display:flex;gap:9px;justify-content:flex-end;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.bc{padding:9px 17px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s}
+.bc:hover{background:var(--surface2);color:var(--text)}
+.bs{padding:9px 21px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent),#9c6fff);color:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.bs:hover{opacity:.9}
+.bd{padding:9px 17px;border-radius:8px;border:1px solid rgba(255,107,107,.4);background:transparent;color:var(--ru);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s}
+.bd:hover{background:rgba(255,107,107,.1)}
+.bcp{padding:9px 17px;border-radius:8px;border:1px solid rgba(67,233,123,.4);background:transparent;color:var(--uz);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:all .15s}
+.bcp:hover{background:rgba(67,233,123,.1)}
+.vc{font-size:13px;line-height:1.85;color:var(--text);white-space:pre-wrap;margin-top:13px;border-top:1px solid var(--border);padding-top:16px}
+.vm{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:5px;align-items:center}
+.tir{display:flex;gap:7px}
+.bat{padding:0 12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:15px;cursor:pointer;transition:opacity .15s}
+.bat:hover{opacity:.85}
+
+/* ADMIN */
+.at{width:100%;border-collapse:collapse;font-size:12px}
+.at th{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.at td{padding:9px;border-bottom:1px solid var(--border)}
+.at tr:hover td{background:var(--surface2)}
+.rb{padding:2px 8px;border-radius:99px;font-size:10px}
+.rb-a{background:rgba(255,107,107,.15);color:var(--ru);border:1px solid rgba(255,107,107,.3)}
+.rb-u{background:rgba(108,99,255,.15);color:var(--en);border:1px solid rgba(108,99,255,.3)}
+.bsm{padding:4px 9px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10px;cursor:pointer;transition:all .15s}
+.bsm:hover{color:var(--text);border-color:var(--accent)}
+.bsm.dg{border-color:rgba(255,107,107,.3);color:var(--ru)}
+.bsm.dg:hover{background:rgba(255,107,107,.1)}
+.nuf{display:grid;grid-template-columns:1fr 1fr auto auto;gap:9px;align-items:end;margin-bottom:18px}
+
+/* TOAST */
+#toast{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.ti2{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 16px;font-size:11px;animation:tIn .2s ease;display:flex;align-items:center;gap:9px}
+@keyframes tIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+.to{border-color:rgba(67,233,123,.4);color:var(--uz)}.te{border-color:rgba(255,107,107,.4);color:var(--ru)}
+
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">TextVault</div>
+    <div class="auth-sub">Общее хранилище · Войдите для доступа</div>
+    <label class="auth-label">Логин</label>
+    <input class="auth-input" id="a-login" type="text" placeholder="введите логин">
+    <label class="auth-label">Пароль</label>
+    <input class="auth-input" id="a-pass" type="password" placeholder="••••••••">
+    <button class="auth-btn" onclick="doLogin()">Войти →</button>
+    <div class="auth-err" id="a-err"></div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="setup-screen">
+  <div class="setup-box">
+    <div class="setup-title">⚙️ Первоначальная настройка</div>
+    <div class="setup-desc">TextVault хранит все тексты в <strong>GitHub Gist</strong> — это бесплатная общая база данных. Все пользователи пишут в один Gist. Нужно 2 минуты.</div>
+
+    <div class="s-step"><strong>Шаг 1.</strong> Создайте аккаунт на <a href="https://github.com" target="_blank">github.com</a> (если нет).</div>
+    <div class="s-step"><strong>Шаг 2.</strong> Перейдите: <a href="https://github.com/settings/tokens" target="_blank">Settings → Developer Settings → Tokens (classic)</a><br>
+    Нажмите <strong>Generate new token (classic)</strong>, укажите название, поставьте галочку <code>gist</code>, нажмите <strong>Generate token</strong>. Скопируйте токен.</div>
+    <div class="s-step"><strong>Шаг 3.</strong> Вставьте токен ниже → нажмите «Создать базу данных». Готово!</div>
+
+    <div class="fg"><label class="fl">GitHub Personal Access Token</label>
+      <input class="fi" id="s-token" type="text" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+    </div>
+    <button class="auth-btn" onclick="doSetup()">🚀 Создать базу данных</button>
+    <div class="auth-err" id="s-err"></div>
+
+    <hr class="s-divider">
+    <div class="setup-desc" style="margin-bottom:10px">Уже есть Gist? Введите токен + Gist ID:</div>
+    <div class="fg"><label class="fl">Gist ID</label>
+      <input class="fi" id="s-gistid" type="text" placeholder="abc123def456...">
+    </div>
+    <button class="bc" style="width:100%;margin-top:4px;text-align:center" onclick="connectGist()">Подключить существующий Gist</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+<header>
+  <div class="logo">TextVault</div>
+  <div class="hdr-right">
+    <div class="hdr-s"><span class="dot" style="background:var(--ru)"></span>RU:<strong id="hdr-ru">0</strong></div>
+    <div class="hdr-s"><span class="dot" style="background:var(--en)"></span>EN:<strong id="hdr-en">0</strong></div>
+    <div class="hdr-s"><span class="dot" style="background:var(--uz)"></span>UZ:<strong id="hdr-uz">0</strong></div>
+    <button class="sync-b" onclick="syncNow()">⟳ Синхр</button>
+    <div class="ub" onclick="openMo('user-mo')">👤 <span id="u-name"></span></div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div style="padding:0 15px 13px">
+      <button class="bn" onclick="openNewMo()">＋ Новый текст</button>
+    </div>
+    <div class="sbs">
+      <div class="sbl">Поиск</div>
+      <div class="sw"><span class="si">⌕</span>
+        <input type="text" id="s-in" placeholder="Заголовок, текст, тема, автор..." oninput="filter()">
+      </div>
+    </div>
+    <div class="sbs">
+      <div class="sbl">Язык</div>
+      <div class="lf">
+        <button class="lb active" data-l="all" onclick="setL(this)">🌐 Все<span class="bdg" id="c-all">0</span></button>
+        <button class="lb" data-l="ru" onclick="setL(this)"><span class="dot" style="background:var(--ru)"></span>Русский<span class="bdg" id="c-ru">0</span></button>
+        <button class="lb" data-l="en" onclick="setL(this)"><span class="dot" style="background:var(--en)"></span>English<span class="bdg" id="c-en">0</span></button>
+        <button class="lb" data-l="uz" onclick="setL(this)"><span class="dot" style="background:var(--uz)"></span>O'zbek<span class="bdg" id="c-uz">0</span></button>
+      </div>
+    </div>
+    <div class="sbs">
+      <div class="sbl">Темы</div>
+      <div class="tl" id="tl"></div>
+    </div>
+    <div id="adm-sb" style="display:none;padding:15px">
+      <button class="bc" style="width:100%;font-size:11px;text-align:center" onclick="openAdm()">👑 Администратор</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="mb">
+      <div class="mc mc-t"><div class="ml">ВСЕГО</div><div class="mv" id="m-tot">0</div><div class="ms">текстов</div></div>
+      <div class="mc mc-r"><div class="ml">РУССКИЙ</div><div class="mv" id="m-ru">0</div><div class="ms">текстов</div></div>
+      <div class="mc mc-e"><div class="ml">ENGLISH</div><div class="mv" id="m-en">0</div><div class="ms">texts</div></div>
+      <div class="mc mc-u"><div class="ml">O'ZBEK</div><div class="mv" id="m-uz">0</div><div class="ms">matn</div></div>
+    </div>
+    <div class="cr">
+      <div class="vt" id="vt">Все тексты</div>
+      <select class="ss" onchange="filter()">
+        <option value="n">Сначала новые</option>
+        <option value="o">Сначала старые</option>
+        <option value="a">По алфавиту</option>
+      </select>
+    </div>
+    <div class="cg" id="cg"></div>
+  </main>
+</div>
+</div>
+
+<!-- New Modal -->
+<div class="mo" id="new-mo">
+  <div class="mb2">
+    <button class="cx" onclick="closeMo('new-mo')">×</button>
+    <div class="mt">Новый текст</div>
+    <div class="fg"><label class="fl">Заголовок</label><input class="fi" id="f-ttl" placeholder="Введите заголовок..."></div>
+    <div class="fr">
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Язык</label>
+        <div class="ls">
+          <div class="lo" data-v="ru" onclick="pickL(this)">🇷🇺 RU</div>
+          <div class="lo" data-v="en" onclick="pickL(this)">🇬🇧 EN</div>
+          <div class="lo" data-v="uz" onclick="pickL(this)">🇺🇿 UZ</div>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="fl">Тема</label>
+        <select class="fsl" id="f-top"></select>
+        <div class="tir" style="margin-top:7px">
+          <input class="fi" id="nt-in" placeholder="Новая тема...">
+          <button class="bat" onclick="addTop()">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:13px"><label class="fl">Текст</label><textarea class="fta" id="f-body" placeholder="Введите текст..."></textarea></div>
+    <div class="ma">
+      <button class="bc" onclick="closeMo('new-mo')">Отмена</button>
+      <button class="bs" onclick="saveText()">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Modal -->
+<div class="mo" id="view-mo">
+  <div class="mb2 mb2-lg">
+    <button class="cx" onclick="closeMo('view-mo')">×</button>
+    <div class="vm" id="vm-m"></div>
+    <div class="mt" id="vm-t" style="margin-bottom:0"></div>
+    <div class="vc" id="vm-b"></div>
+    <div class="ma">
+      <button class="bd" id="v-del" onclick="delText()">🗑 Удалить</button>
+      <button class="bcp" onclick="copyNow()">📋 Скопировать</button>
+      <button class="bc" onclick="closeMo('view-mo')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div class="mo" id="adm-mo">
+  <div class="mb2 mb2-lg">
+    <button class="cx" onclick="closeMo('adm-mo')">×</button>
+    <div class="mt">👑 Панель администратора</div>
+    <div class="fl" style="margin-bottom:10px">Добавить пользователя</div>
+    <div class="nuf">
+      <div><label class="fl">Логин</label><input class="fi" id="nu-l" placeholder="логин"></div>
+      <div><label class="fl">Пароль</label><input class="fi" id="nu-p" type="password" placeholder="пароль"></div>
+      <div><label class="fl">Роль</label><select class="fsl" id="nu-r"><option value="user">user</option><option value="admin">admin</option></select></div>
+      <div style="padding-top:18px"><button class="bs" onclick="addUser()" style="white-space:nowrap;font-size:11px">+ Добавить</button></div>
+    </div>
+    <table class="at">
+      <thead><tr><th>#</th><th>Логин</th><th>Роль</th><th>Текстов</th><th></th></tr></thead>
+      <tbody id="adm-tb"></tbody>
+    </table>
+    <div class="ma"><button class="bc" onclick="closeMo('adm-mo')">Закрыть</button></div>
+  </div>
+</div>
+
+<!-- User Menu -->
+<div class="mo" id="user-mo">
+  <div class="mb2" style="max-width:300px">
+    <button class="cx" onclick="closeMo('user-mo')">×</button>
+    <div class="mt" id="um-n"></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:18px" id="um-r"></div>
+    <button class="bd" style="width:100%" onclick="logout()">🚪 Выйти</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const GF = 'textvault-db.json';
+let TOKEN='', GIST='', DB={users:[],texts:[],topics:['Литература','Наука','Технологии','История','Разное']};
+let ME=null, sL='all', sT='all', sLV='', vId=null;
+
+// BOOT
+async function boot(){
+  TOKEN=localStorage.getItem('tv_tok')||'';
+  GIST=localStorage.getItem('tv_gist')||'';
+  const su=localStorage.getItem('tv_user');
+  if(!TOKEN||!GIST){show('setup');return}
+  const ok=await loadDB();
+  if(!ok){show('setup');return}
+  if(su){const u=DB.users.find(x=>x.login===su);if(u){ME=u;show('app');initApp();return}}
+  show('auth');
+}
+function show(s){
+  document.getElementById('auth-screen').style.display=s==='auth'?'flex':'none';
+  document.getElementById('setup-screen').style.display=s==='setup'?'flex':'none';
+  document.getElementById('app').style.display=s==='app'?'block':'none';
+}
+
+// GIST DB
+async function loadDB(){
+  try{
+    const r=await fetch(`https://api.github.com/gists/${GIST}`,{headers:{Authorization:`token ${TOKEN}`}});
+    if(!r.ok)return false;
+    const g=await r.json();
+    const raw=g.files[GF]?.content;
+    if(!raw)return false;
+    DB=JSON.parse(raw);return true;
+  }catch{return false}
+}
+async function saveDB(){
+  try{
+    const r=await fetch(`https://api.github.com/gists/${GIST}`,{
+      method:'PATCH',
+      headers:{Authorization:`token ${TOKEN}`,'Content-Type':'application/json'},
+      body:JSON.stringify({files:{[GF]:{content:JSON.stringify(DB,null,2)}}})
+    });
+    return r.ok;
+  }catch{return false}
+}
+
+// SETUP
+async function doSetup(){
+  const tok=document.getElementById('s-token').value.trim();
+  if(!tok){document.getElementById('s-err').textContent='Введите токен';return}
+  document.getElementById('s-err').textContent='Создаётся Gist...';
+  try{
+    const init={users:[{login:'admin',pass:'admin123',role:'admin'}],texts:[],topics:['Литература','Наука','Технологии','История','Разное']};
+    const r=await fetch('https://api.github.com/gists',{
+      method:'POST',
+      headers:{Authorization:`token ${tok}`,'Content-Type':'application/json'},
+      body:JSON.stringify({description:'TextVault DB',public:false,files:{[GF]:{content:JSON.stringify(init,null,2)}}})
+    });
+    if(!r.ok){document.getElementById('s-err').textContent='Ошибка. Проверьте токен.';return}
+    const g=await r.json();
+    TOKEN=tok;GIST=g.id;
+    localStorage.setItem('tv_tok',tok);localStorage.setItem('tv_gist',g.id);
+    DB=init;
+    alert(`✅ База данных создана!\n\nGist ID: ${g.id}\nАдмин: admin / admin123\n\n⚠️ Дайте этот Gist ID другим пользователям — они введут его при подключении.\nСмените пароль после первого входа!`);
+    show('auth');
+  }catch(e){document.getElementById('s-err').textContent='Ошибка: '+e.message}
+}
+async function connectGist(){
+  const tok=document.getElementById('s-token').value.trim();
+  const gid=document.getElementById('s-gistid').value.trim();
+  if(!tok||!gid){document.getElementById('s-err').textContent='Введите токен и Gist ID';return}
+  TOKEN=tok;GIST=gid;
+  localStorage.setItem('tv_tok',tok);localStorage.setItem('tv_gist',gid);
+  const ok=await loadDB();
+  if(ok)show('auth');
+  else{document.getElementById('s-err').textContent='Не удалось подключиться.';localStorage.removeItem('tv_tok');localStorage.removeItem('tv_gist')}
+}
+
+// AUTH
+async function doLogin(){
+  const login=document.getElementById('a-login').value.trim();
+  const pass=document.getElementById('a-pass').value;
+  const err=document.getElementById('a-err');
+  err.textContent='Проверка...';
+  const ok=await loadDB();
+  if(!ok){err.textContent='Ошибка соединения';return}
+  const u=DB.users.find(x=>x.login===login&&x.pass===pass);
+  if(!u){err.textContent='Неверный логин или пароль';return}
+  ME=u;localStorage.setItem('tv_user',u.login);show('app');initApp();
+}
+function logout(){ME=null;localStorage.removeItem('tv_user');closeMo('user-mo');show('auth')}
+
+// APP
+function initApp(){
+  document.getElementById('u-name').textContent=ME.login;
+  document.getElementById('adm-sb').style.display=ME.role==='admin'?'block':'none';
+  renderTopics();filter();updateMon();
+}
+async function syncNow(){
+  toast('⟳ Синхронизация...');
+  const ok=await loadDB();
+  if(ok){filter();renderTopics();updateMon();toast('✓ Синхронизировано','o')}
+  else toast('✗ Ошибка','e');
+}
+
+// MONITOR
+function updateMon(){
+  const ru=DB.texts.filter(t=>t.lang==='ru').length;
+  const en=DB.texts.filter(t=>t.lang==='en').length;
+  const uz=DB.texts.filter(t=>t.lang==='uz').length;
+  const tot=DB.texts.length;
+  ['tot','ru','en','uz'].forEach(k=>document.getElementById(`m-${k}`).textContent=({tot,ru,en,uz})[k]);
+  document.getElementById('hdr-ru').textContent=ru;
+  document.getElementById('hdr-en').textContent=en;
+  document.getElementById('hdr-uz').textContent=uz;
+  document.getElementById('c-all').textContent=tot;
+  document.getElementById('c-ru').textContent=ru;
+  document.getElementById('c-en').textContent=en;
+  document.getElementById('c-uz').textContent=uz;
+}
+
+// TOPICS
+function renderTopics(){
+  const cnt={};DB.texts.forEach(t=>{cnt[t.topic]=(cnt[t.topic]||0)+1});
+  let h=`<div class="ti ${sT==='all'?'active':''}" data-t="all" onclick="setT(this)"># Все<span class="tc">${DB.texts.length}</span></div>`;
+  (DB.topics||[]).forEach(tp=>{
+    h+=`<div class="ti ${sT===tp?'active':''}" data-t="${esc(tp)}" onclick="setT(this)"># ${esc(tp)}<span class="tc">${cnt[tp]||0}</span></div>`;
+  });
+  document.getElementById('tl').innerHTML=h;
+}
+function renderTopSel(){
+  const s=document.getElementById('f-top');
+  s.innerHTML='<option value="">— выберите —</option>';
+  (DB.topics||[]).forEach(tp=>s.innerHTML+=`<option value="${esc(tp)}">${esc(tp)}</option>`);
+}
+async function addTop(){
+  const v=document.getElementById('nt-in').value.trim();
+  if(!v||DB.topics.includes(v))return;
+  DB.topics.push(v);await saveDB();
+  renderTopSel();renderTopics();
+  document.getElementById('f-top').value=v;
+  document.getElementById('nt-in').value='';
+}
+
+// FILTERS
+function setL(btn){sL=btn.dataset.l;document.querySelectorAll('.lb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');filter()}
+function setT(el){sT=el.dataset.t;document.querySelectorAll('.ti').forEach(i=>i.classList.remove('active'));el.classList.add('active');filter()}
+function filter(){
+  const q=(document.getElementById('s-in')?.value||'').trim().toLowerCase();
+  const srt=document.querySelector('.ss')?.value||'n';
+  let list=DB.texts.filter(t=>{
+    const lk=sL==='all'||t.lang===sL;
+    const tk=sT==='all'||t.topic===sT;
+    const sk=!q||t.title.toLowerCase().includes(q)||t.body.toLowerCase().includes(q)||(t.topic||'').toLowerCase().includes(q)||(t.author||'').toLowerCase().includes(q);
+    return lk&&tk&&sk;
+  });
+  if(srt==='n')list.sort((a,b)=>b.id-a.id);
+  else if(srt==='o')list.sort((a,b)=>a.id-b.id);
+  else list.sort((a,b)=>a.title.localeCompare(b.title));
+  const ll={all:'Все тексты',ru:'Русский',en:'English',uz:"O'zbek"};
+  let ttl=ll[sL];if(sT!=='all')ttl+=` · ${sT}`;if(q)ttl+=` · "${q}"`;
+  document.getElementById('vt').textContent=ttl;
+  renderCards(list,q);renderTopics();updateMon();
+}
+function hl(s,q){
+  if(!q)return esc(s);
+  const re=new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return esc(s).replace(re,'<mark class="hl">$1</mark>');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function renderCards(list,q=''){
+  const g=document.getElementById('cg');
+  if(!list.length){g.innerHTML=`<div class="es"><div class="ei">${q||sT!=='all'?'🔍':'📚'}</div><p>${q||sT!=='all'?'Ничего не найдено.':'Нет текстов. Нажмите «Новый текст»!'}</p></div>`;return}
+  const ln={ru:'🇷🇺 RU',en:'🇬🇧 EN',uz:'🇺🇿 UZ'};
+  const lc={ru:'lt-r',en:'lt-e',uz:'lt-u'};
+  g.innerHTML=list.map(t=>`
+    <div class="card" onclick="openView(${t.id})">
+      <button class="cpb" onclick="event.stopPropagation();copyById(${t.id})">📋</button>
+      <div class="lt ${lc[t.lang]}">${ln[t.lang]}</div>
+      <div class="ct">${hl(t.title,q)}</div>
+      <div class="cp">${hl(t.body.slice(0,220),q)}</div>
+      <div class="cf">
+        <span class="tt">${esc(t.topic||'Без темы')}</span>
+        <span class="ca">✍ ${esc(t.author||'?')}</span>
+        <span class="cd">${esc(t.date)}</span>
+      </div>
+    </div>`).join('');
+}
+
+// NEW TEXT
+function openNewMo(){
+  document.getElementById('f-ttl').value='';
+  document.getElementById('f-body').value='';
+  sLV='';
+  document.querySelectorAll('.lo').forEach(o=>o.className='lo');
+  renderTopSel();openMo('new-mo');
+}
+function pickL(el){document.querySelectorAll('.lo').forEach(o=>o.className='lo');sLV=el.dataset.v;el.classList.add(`s${sLV[0]}`)}
+async function saveText(){
+  const ttl=document.getElementById('f-ttl').value.trim();
+  const body=document.getElementById('f-body').value.trim();
+  const top=document.getElementById('f-top').value||'Разное';
+  if(!ttl){alert('Введите заголовок');return}
+  if(!body){alert('Введите текст');return}
+  if(!sLV){alert('Выберите язык');return}
+  const date=new Date().toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'});
+  DB.texts.push({id:Date.now(),title:ttl,body,lang:sLV,topic:top,author:ME.login,date});
+  const ok=await saveDB();
+  if(ok){toast('✓ Сохранено','o');closeMo('new-mo');filter()}else toast('✗ Ошибка сохранения','e');
+}
+
+// VIEW
+function openView(id){
+  const t=DB.texts.find(x=>x.id===id);if(!t)return;vId=id;
+  const ln={ru:'🇷🇺 Русский',en:'🇬🇧 English',uz:"🇺🇿 O'zbek"};
+  const lc={ru:'lt-r',en:'lt-e',uz:'lt-u'};
+  document.getElementById('vm-m').innerHTML=`<span class="lt ${lc[t.lang]}">${ln[t.lang]}</span><span class="tt">${esc(t.topic||'')}</span><span class="ca" style="margin-left:4px">✍ ${esc(t.author||'?')}</span><span class="cd" style="margin-left:auto">${esc(t.date)}</span>`;
+  document.getElementById('vm-t').textContent=t.title;
+  document.getElementById('vm-b').textContent=t.body;
+  document.getElementById('v-del').style.display=(ME.role==='admin'||t.author===ME.login)?'block':'none';
+  openMo('view-mo');
+}
+async function delText(){
+  if(!vId||!confirm('Удалить этот текст?'))return;
+  DB.texts=DB.texts.filter(t=>t.id!==vId);
+  const ok=await saveDB();
+  if(ok){toast('🗑 Удалено','o');closeMo('view-mo');filter()}else toast('✗ Ошибка','e');
+}
+function copyNow(){copyById(vId)}
+function copyById(id){
+  const t=DB.texts.find(x=>x.id===id);if(!t)return;
+  navigator.clipboard.writeText(t.body).then(()=>toast('📋 Скопировано!','o')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=t.body;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('📋 Скопировано!','o');
+  });
+}
+
+// ADMIN
+function openAdm(){renderAdm();openMo('adm-mo')}
+function renderAdm(){
+  const cnt={};DB.texts.forEach(t=>{cnt[t.author]=(cnt[t.author]||0)+1});
+  document.getElementById('adm-tb').innerHTML=DB.users.map((u,i)=>`
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td>${esc(u.login)}</td>
+      <td><span class="rb ${u.role==='admin'?'rb-a':'rb-u'}">${u.role}</span></td>
+      <td>${cnt[u.login]||0}</td>
+      <td>${u.login!==ME.login?`<button class="bsm dg" onclick="removeUser('${esc(u.login)}')">✕ Удалить</button>`:'<span style="color:var(--muted);font-size:10px">вы</span>'}</td>
+    </tr>`).join('');
+}
+async function addUser(){
+  const l=document.getElementById('nu-l').value.trim();
+  const p=document.getElementById('nu-p').value;
+  const r=document.getElementById('nu-r').value;
+  if(!l||!p){toast('Заполните логин и пароль','e');return}
+  if(DB.users.find(u=>u.login===l)){toast('Логин уже занят','e');return}
+  DB.users.push({login:l,pass:p,role:r});
+  const ok=await saveDB();
+  if(ok){toast(`✓ Пользователь ${l} добавлен`,'o');document.getElementById('nu-l').value='';document.getElementById('nu-p').value='';renderAdm()}
+  else toast('✗ Ошибка','e');
+}
+async function removeUser(login){
+  if(!confirm(`Удалить ${login}?`))return;
+  DB.users=DB.users.filter(u=>u.login!==login);
+  const ok=await saveDB();
+  if(ok){toast(`🗑 ${login} удалён`,'o');renderAdm()}else toast('✗ Ошибка','e');
+}
+
+// USER MENU
+function openUserMenu(){
+  document.getElementById('um-n').textContent=ME.login;
+  document.getElementById('um-r').textContent=ME.role==='admin'?'👑 Администратор':'👤 Пользователь';
+  openMo('user-mo');
+}
+document.querySelector('.ub').onclick=openUserMenu;
+
+// MODAL
+function openMo(id){document.getElementById(id).classList.add('open')}
+function closeMo(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.mo.open').forEach(m=>m.classList.remove('open'))});
+
+// TOAST
+function toast(msg,type=''){
+  const el=document.createElement('div');
+  el.className=`ti2${type==='o'?' to':type==='e'?' te':''}`;
+  el.textContent=msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+
+boot();
+</script>
+</body>
+</html>
