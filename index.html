@@ -347,7 +347,7 @@ kbd{background:var(--card2);border:1px solid var(--border);border-radius:2px;pad
 <div class="tinw"><input id="f-tag" placeholder="Тег + Enter..." onkeydown="tagK(event)"><button class="bat" onclick="addTag()">+</button></div></div>
 <div class="fg"><label class="fl">Текст макроса</label><textarea class="fta" id="f-body" placeholder="Введите текст..."></textarea></div>
 <div class="ma">
-<button class="btn bng" onclick="closeM('m-new')">ОТМЕНА</button>
+ 
 <button class="btn bndk" onclick="dupeTxt()" id="dup-btn" style="display:none">&#8853; ДУБЛИРОВАТЬ</button>
 <button class="btn bny" onclick="saveTxt()" id="save-btn" style="min-width:150px">&#128190; СОХРАНИТЬ</button>
 </div></div></div></div>
@@ -548,7 +548,11 @@ function saveDB(){
 function addLog(action,detail){
   if(!DB.log)DB.log=[];
   DB.log.unshift({t:Date.now(),user:ME?ME.login:'?',action:action,detail:detail||''});
-  if(DB.log.length>200)DB.log=DB.log.slice(0,200);
+  // Keep only last 24 hours
+  var cutoff=Date.now()-86400000;
+  DB.log=DB.log.filter(function(l){return l.t>cutoff;});
+  // Hard cap 500 entries
+  if(DB.log.length>500)DB.log=DB.log.slice(0,500);
 }
  
 function doConnect(){
